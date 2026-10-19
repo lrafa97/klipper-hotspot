@@ -13,8 +13,10 @@ from .config import Config, load_config
 from .credentials import create_credentials, load_credentials
 from .doctor import FAIL, run_checks
 from .errors import CredentialsError, HotspotError
+from .notify import describe, prompt_script, send_script
 
 COMMANDS = ("daemon", "on", "off", "status", "credentials", "init", "doctor", "cleanup")
+DAEMON_VERBS = ("on", "off", "status", "credentials")
 
 
 def format_status(result: Dict[str, Any]) -> str:
@@ -37,6 +39,26 @@ def _emit(args: argparse.Namespace, result: Dict[str, Any], text: str) -> None:
     print(json.dumps(result) if args.json else text)
 
 
+def _show_on_screen(config: Config, title: str, lines: List[str]) -> None:
+    """Best effort: the console output is the reliable channel, the screen is a bonus."""
+    try:
+        send_script(config.moonraker_url, prompt_script(title, lines))
+    except HotspotError as exc:
+        print(f"WARNING: could not show the message on the screen: {exc}", file=sys.stderr)
+
+
+def _screen_for_result(config: Config, cmd: str, result: Dict[str, Any]) -> None:
+    credentials = None
+    if cmd == "on" and result.get("state") == "on":
+        # Whoever is at the machine needs the password to join, so the screen shows it.
+        try:
+            credentials = send_request(config.socket_path, "credentials", timeout=10.0)
+        except HotspotError:
+            credentials = None
+    title, lines = describe(cmd, result, credentials)
+    _show_on_screen(config, title, lines)
+
+
 def _run(args: argparse.Namespace, config: Config) -> int:
     cmd = args.command
     if cmd == "daemon":
@@ -45,14 +67,16 @@ def _run(args: argparse.Namespace, config: Config) -> int:
         logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
         return run_daemon(config)
 
-    if cmd in ("on", "off", "status"):
-        result = send_request(config.socket_path, cmd)
-        _emit(args, result, format_status(result))
-        return 0
-
-    if cmd == "credentials":
-        result = send_request(config.socket_path, cmd)
-        _emit(args, result, format_credentials(result))
+    if cmd in DAEMON_VERBS:
+        try:
+            result = send_request(config.socket_path, cmd)
+        except HotspotError as exc:
+            if args.screen:
+                _show_on_screen(config, "Hotspot error", [str(exc)])
+            raise
+        _emit(args, result, format_credentials(result) if cmd == "credentials" else format_status(result))
+        if args.screen:
+            _screen_for_result(config, cmd, result)
         return 0
 
     if cmd == "init":
@@ -82,6 +106,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(prog="klipper-hotspot")
     parser.add_argument("--config", default=None, help="path to hotspot.conf")
     parser.add_argument("--json", action="store_true", help="machine-readable output")
+    parser.add_argument(
+        "--screen",
+        action="store_true",
+        help="also show the result on the machine screen (a Klipper prompt sent through Moonraker)",
+    )
     parser.add_argument("command", choices=COMMANDS)
     args = parser.parse_args(argv)
     try:

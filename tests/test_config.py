@@ -90,3 +90,26 @@ def test_shipped_example_config_stays_valid():
     cfg = parse_config(text)
     assert cfg.warnings == ()
     assert cfg.autostart is False  # decision: the hotspot is a mode, off by default
+
+
+def test_moonraker_url_default_and_accepted_forms():
+    assert parse_config("").moonraker_url == "http://127.0.0.1:7125"
+    for url in ("http://127.0.0.1:7126", "http://localhost:7125", "http://[::1]:7125", "http://127.0.0.1:7125/"):
+        assert parse_config(f"[integration]\nmoonraker_url = {url}\n").moonraker_url == url.rstrip("/")
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://example.com:7125",
+        "http://192.168.1.10:7125",
+        "https://127.0.0.1:7125",
+        "http://127.0.0.1:7125/printer",
+        "http://user@127.0.0.1:7125",
+        "http://127.0.0.1:notaport",
+        "127.0.0.1:7125",
+    ],
+)
+def test_moonraker_url_must_be_this_machine(url):
+    with pytest.raises(ConfigError, match="this machine only"):
+        parse_config(f"[integration]\nmoonraker_url = {url}\n")

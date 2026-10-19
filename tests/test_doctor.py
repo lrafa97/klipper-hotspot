@@ -96,3 +96,20 @@ def test_untrusted_subnet_fails(healthy, tmp_path):
 def test_unset_moonraker_path_warns(healthy):
     cfg = Config(**{**healthy.__dict__, "moonraker_conf": ""})
     assert by_name(run_checks(cfg, FakeBackend()))["moonraker trusted_clients"].level == WARN
+
+
+def test_respond_module_found_in_an_included_file(healthy, tmp_path):
+    (tmp_path / "sub").mkdir()
+    (tmp_path / "sub" / "mainsail.cfg").write_text("[virtual_sdcard]\npath: x\n\n[respond]\n")
+    assert by_name(run_checks(healthy, FakeBackend()))["klipper respond module"].level == OK
+
+
+def test_respond_module_missing_warns_with_the_fix(healthy, tmp_path):
+    (tmp_path / "printer.cfg").write_text("[mcu]\nserial: x\n")
+    check = by_name(run_checks(healthy, FakeBackend()))["klipper respond module"]
+    assert check.level == WARN and "[respond]" in check.detail
+
+
+def test_a_commented_out_respond_section_does_not_count(healthy, tmp_path):
+    (tmp_path / "printer.cfg").write_text("#[respond]\n")
+    assert by_name(run_checks(healthy, FakeBackend()))["klipper respond module"].level == WARN

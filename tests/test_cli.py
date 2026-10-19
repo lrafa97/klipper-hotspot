@@ -88,3 +88,81 @@ def test_unknown_command_is_rejected_by_argparse():
 def test_format_status_handles_unknown_clients():
     text = format_status({"state": "on", "ssid": "X", "ip": "10.42.0.1", "clients": None})
     assert "Clients: unknown" in text
+
+
+# -- --screen: the on-screen message ---------------------------------------------------------
+
+
+@pytest.fixture
+def screen(running, moonraker, tmp_path):
+    """The CLI config from `running`, plus a Moonraker that records what the screen would show."""
+    cfg = tmp_path / "hotspot-screen.conf"
+    base = open(running).read()
+    cfg.write_text(base + f"\n[integration]\nmoonraker_url = {moonraker.url}\n")
+    return str(cfg), moonraker
+
+
+def test_on_with_screen_shows_ssid_password_and_address(screen, capsys):
+    cfg, moonraker = screen
+    assert main(["--config", cfg, "on", "--screen"]) == 0
+    script = moonraker.scripts[0]
+    assert "prompt_begin Hotspot ON" in script
+    assert "SSID: Klipper-TEST" in script
+    assert f"Password: {PASSWORD}" in script
+    assert "http://10.42.0.1" in script
+    assert PASSWORD not in capsys.readouterr().out  # the console output stays password-free
+
+
+def test_status_with_screen_never_shows_the_password(screen):
+    cfg, moonraker = screen
+    assert main(["--config", cfg, "status", "--screen"]) == 0
+    assert "State: OFF" in moonraker.scripts[0]
+    assert PASSWORD not in moonraker.scripts[0]
+
+
+def test_off_and_credentials_with_screen(screen):
+    cfg, moonraker = screen
+    assert main(["--config", cfg, "off", "--screen"]) == 0
+    assert "prompt_begin Hotspot OFF" in moonraker.scripts[-1]
+    assert main(["--config", cfg, "credentials", "--screen"]) == 0
+    assert f"Password: {PASSWORD}" in moonraker.scripts[-1]
+
+
+def test_without_screen_nothing_is_sent_to_moonraker(screen):
+    cfg, moonraker = screen
+    assert main(["--config", cfg, "status"]) == 0
+    assert moonraker.scripts == []
+
+
+def test_a_failure_is_shown_on_the_screen_too(screen, backend, capsys):
+    cfg, moonraker = screen
+    backend.fail_start = True
+    assert main(["--config", cfg, "on", "--screen"]) == 1
+    assert "prompt_begin Hotspot error" in moonraker.scripts[0]
+    assert "simulated start failure" in moonraker.scripts[0]
+    assert capsys.readouterr().err.startswith("ERROR:")
+
+
+def test_a_hostile_error_message_cannot_inject_gcode(screen, backend):
+    cfg, moonraker = screen
+    backend.fail_start = True
+    original = backend.start_hotspot
+
+    def hostile(settings):
+        from klipper_hotspot.errors import BackendError
+
+        raise BackendError('boom"\nM112\nFIRMWARE_RESTART;')
+
+    backend.start_hotspot = hostile
+    assert main(["--config", cfg, "on", "--screen"]) == 1
+    for line in moonraker.scripts[0].split("\n"):
+        assert line.startswith('RESPOND TYPE=command MSG="action:')
+
+
+def test_moonraker_being_down_does_not_fail_the_command(running, capsys, tmp_path):
+    cfg = tmp_path / "down.conf"
+    cfg.write_text(open(running).read() + "\n[integration]\nmoonraker_url = http://127.0.0.1:9\n")
+    assert main(["--config", str(cfg), "status", "--screen"]) == 0
+    captured = capsys.readouterr()
+    assert "Hotspot: OFF" in captured.out  # the console answer still arrives
+    assert "WARNING: could not show the message on the screen" in captured.err

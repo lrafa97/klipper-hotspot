@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import configparser
 import ipaddress
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
@@ -72,6 +73,25 @@ def _check_moonraker(config: Config) -> Check:
     )
 
 
+def _check_respond(config: Config) -> Check:
+    """The macros and the on-screen messages use RESPOND, which needs the respond module."""
+    name = "klipper respond module"
+    if not config.moonraker_conf:
+        return Check(name, WARN, "no [integration] moonraker_conf set; cannot look for it")
+    folder = Path(config.moonraker_conf).parent
+    try:
+        for cfg in sorted(folder.rglob("*.cfg")):
+            if re.search(r"^\[respond\]", cfg.read_text(encoding="utf-8", errors="ignore"), re.MULTILINE):
+                return Check(name, OK, f"found in {cfg.name}")
+    except OSError as exc:
+        return Check(name, WARN, f"cannot read {folder}: {exc.strerror or exc}")
+    return Check(
+        name, WARN,
+        f"no [respond] section found under {folder}; add it to printer.cfg or the macros and "
+        "on-screen messages will fail",
+    )
+
+
 def run_checks(config: Config, backend: NetworkBackend) -> List[Check]:
     checks: List[Check] = []
 
@@ -97,4 +117,5 @@ def run_checks(config: Config, backend: NetworkBackend) -> List[Check]:
         checks.append(Check("daemon", WARN, str(exc)))
 
     checks.append(_check_moonraker(config))
+    checks.append(_check_respond(config))
     return checks

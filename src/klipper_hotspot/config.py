@@ -4,6 +4,7 @@ from __future__ import annotations
 import configparser
 import ipaddress
 import re
+import urllib.parse
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Tuple
@@ -22,7 +23,7 @@ _KNOWN_KEYS = {
     "general": {"config_version", "autostart"},
     "hotspot": {"interface", "ssid_prefix", "band", "channel", "address"},
     "paths": {"socket", "socket_group", "state_file", "credentials_file"},
-    "integration": {"moonraker_conf"},
+    "integration": {"moonraker_conf", "moonraker_url"},
     "fallback": {"enabled"},
     "portal": {"enabled"},
 }
@@ -30,6 +31,7 @@ _KNOWN_KEYS = {
 _IFACE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,14}$")
 _PREFIX_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,23}$")
 _GROUP_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_.-]{0,31}$")
+_LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
 
 
 @dataclass(frozen=True)
@@ -46,6 +48,7 @@ class Config:
     state_file: str = "/var/lib/klipper-hotspot/state.json"
     credentials_file: str = "/etc/klipper-hotspot/credentials"
     moonraker_conf: str = ""
+    moonraker_url: str = "http://127.0.0.1:7125"
     warnings: Tuple[str, ...] = ()
 
     @property
@@ -79,6 +82,26 @@ def _get_str(parser: configparser.ConfigParser, section: str, key: str, default:
     if raw is None:
         return default
     return raw.strip()
+
+
+def _validate_moonraker_url(raw: str) -> str:
+    message = "[integration] moonraker_url must look like http://127.0.0.1:7125 (this machine only)"
+    try:
+        parts = urllib.parse.urlsplit(raw)
+        parts.port  # raises ValueError on a bad port
+    except ValueError:
+        raise ConfigError(message)
+    if (
+        parts.scheme != "http"
+        or parts.hostname not in _LOOPBACK_HOSTS
+        or parts.path not in ("", "/")
+        or parts.query
+        or parts.fragment
+        or parts.username
+        or parts.password
+    ):
+        raise ConfigError(message)
+    return raw.rstrip("/")
 
 
 def parse_config(text: str) -> Config:
@@ -159,6 +182,9 @@ def parse_config(text: str) -> Config:
         state_file=_get_str(parser, "paths", "state_file", defaults.state_file),
         credentials_file=_get_str(parser, "paths", "credentials_file", defaults.credentials_file),
         moonraker_conf=_get_str(parser, "integration", "moonraker_conf", defaults.moonraker_conf),
+        moonraker_url=_validate_moonraker_url(
+            _get_str(parser, "integration", "moonraker_url", defaults.moonraker_url)
+        ),
         warnings=tuple(warnings),
     )
 

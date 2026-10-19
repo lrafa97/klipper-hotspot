@@ -25,6 +25,8 @@ credentials_file = /etc/klipper-hotspot/credentials
 [integration]
 # Used by "klipper-hotspot doctor" to check that Moonraker trusts the hotspot subnet.
 moonraker_conf = @MOONRAKER_CONF@
+# Where the on-screen messages are sent (Moonraker on this machine). Loopback addresses only.
+moonraker_url = http://127.0.0.1:7125
 
 # Reserved for future versions. Setting enabled = true in this version is an error.
 [fallback]

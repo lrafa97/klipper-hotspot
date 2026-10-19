@@ -107,3 +107,42 @@ class FakeNmcliRunner:
         if a[:4] == ["nmcli", "-g", "IP4.ADDRESS", "device"]:
             return (0, f"{self.address}\n", "") if self.active else (0, "", "")
         return 2, "", f"simulator: unsupported command {a}"
+
+
+class FakeMoonraker:
+    """A tiny HTTP server that records the G-code scripts POSTed to /printer/gcode/script."""
+
+    def __init__(self) -> None:
+        import json
+        import threading
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+        outer = self
+        self.scripts: List[str] = []
+        self.paths: List[str] = []
+        self.status = 200
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_POST(self):  # noqa: N802
+                length = int(self.headers.get("Content-Length", 0))
+                body = json.loads(self.rfile.read(length) or b"{}")
+                outer.paths.append(self.path)
+                if outer.status == 200:
+                    outer.scripts.append(body.get("script", ""))
+                self.send_response(outer.status)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(b'{"result": "ok"}')
+
+            def log_message(self, *args):  # silence
+                pass
+
+        self._server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.url = f"http://127.0.0.1:{self._server.server_address[1]}"
+        self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
+        self._thread.start()
+
+    def close(self) -> None:
+        self._server.shutdown()
+        self._server.server_close()
+        self._thread.join(timeout=5)

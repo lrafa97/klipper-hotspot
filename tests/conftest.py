@@ -37,3 +37,12 @@ def make_manager(tmp_path, credentials):
         return manager, store
 
     return _make
+
+
+@pytest.fixture
+def moonraker():
+    from fakes import FakeMoonraker
+
+    fake = FakeMoonraker()
+    yield fake
+    fake.close()

@@ -85,18 +85,28 @@ else
     warn "$PRINTER_DATA/config not found; copy data/klipper-hotspot.cfg into your Klipper config folder by hand"
 fi
 
+MISSING_DEPS=0
 if [ ! -f "$HOME_DIR/klipper/klippy/extras/gcode_shell_command.py" ]; then
-    warn "the gcode_shell_command Klipper extra was not found; install it with KIAUH or the macros will not work"
+    MISSING_DEPS=1
+    warn "the gcode_shell_command Klipper extra was not found."
+    warn "Install it with KIAUH BEFORE adding the include line, or Klipper will stop with:"
+    warn "  Section gcode_shell_command hotspot_cmd is not a valid config section"
+fi
+if [ -d "$PRINTER_DATA/config" ] && ! grep -rqs --include="*.cfg" "^\[respond\]" "$PRINTER_DATA/config"; then
+    MISSING_DEPS=1
+    warn "no respond section found in your Klipper config. Add a line with only: [respond]"
+    warn "to printer.cfg, or the macros and the on-screen messages will fail."
 fi
 
 cat <<EOF
 
 Installed. Two manual steps (this installer never edits your printer.cfg or KlipperScreen.conf):
 
-  1. Add this line to printer.cfg, then restart Klipper:
+  1. Once the warnings above (if any) are fixed, add this line to printer.cfg, then restart Klipper:
          [include klipper-hotspot.cfg]
 
-  2. Optional, KlipperScreen menu: paste data/klipperscreen-menu.conf into KlipperScreen.conf.
+  2. Optional, KlipperScreen buttons (they appear in the More menu): paste
+     data/klipperscreen-menu.conf into KlipperScreen.conf and restart KlipperScreen.
 
 Health check:
 EOF

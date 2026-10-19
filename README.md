@@ -11,7 +11,8 @@ Mainsail from a phone or laptop where there is no network. Works with KlipperScr
 - Raspberry Pi OS Bookworm or newer, with NetworkManager (`nmcli`)
 - A Wi-Fi interface (the Pi's own radio is fine) and the Wi-Fi country set (`raspi-config`)
 - Klipper + Moonraker + Mainsail (MainsailOS defaults work)
-- The `gcode_shell_command` Klipper extra (install with KIAUH)
+- The `gcode_shell_command` Klipper extra (install with KIAUH), **before** adding the include line
+- A `[respond]` section in your Klipper config (`klipper-hotspot doctor` checks for it)
 - Python 3.9+ (nothing to `pip install`)
 
 ## Install
@@ -23,7 +24,8 @@ cd klipper-hotspot
 ```
 
 Then add `[include klipper-hotspot.cfg]` to `printer.cfg` and restart Klipper.
-For KlipperScreen buttons, paste `data/klipperscreen-menu.conf` into `KlipperScreen.conf`.
+For KlipperScreen buttons, paste `data/klipperscreen-menu.conf` into `KlipperScreen.conf` and restart
+KlipperScreen. They appear under More, then Hotspot.
 
 The installer generates a unique SSID and password for this machine. Print them on a label.
 
@@ -37,6 +39,9 @@ The installer generates a unique SSID and password for this machine. Print them 
 | `HOTSPOT_CREDENTIALS` | SSID and password (stays in the console history) |
 
 Connect to the hotspot, then open `http://10.42.0.1` for Mainsail.
+
+Every macro also shows its result as a dialog on the machine screen. Switching on shows the SSID,
+password and address, so whoever is at the machine can join. Errors are shown there too.
 
 Over SSH: `klipper-hotspot on | off | status | credentials | doctor`.
 

@@ -47,6 +47,7 @@ automatic fallback and a Wi-Fi setup page, but nothing for those is built yet.
 | `config.py` | Strict, versioned INI. Reserved sections for future features. |
 | `doctor.py` | Read-only health checks (NetworkManager, interface, credentials, daemon, Moonraker). |
 | `cli.py`, `client.py` | The command-line entry point the macros call. |
+| `notify.py` | On-screen feedback (`--screen`): Klipper action prompts sent through Moonraker. Whitelists every character that reaches G-code. |
 
 ## Control protocol
 
@@ -76,6 +77,22 @@ own, so the state always tells the truth about the radio.
 
 Adding a mode later (`STA`, `FALLBACK`, `DEFERRED`) means adding a state and its rows to
 `TRANSITIONS`. `test_every_state_event_pair_is_defined` fails until each new pair is decided.
+
+## On-screen feedback
+
+Macro output only reaches the console, which is useless to someone standing at the machine. With
+`--screen` the CLI also builds a Klipper action prompt and POSTs it to Moonraker on this machine
+(`/printer/gcode/script`); KlipperScreen and Mainsail draw it as a dialog.
+
+- `on` shows SSID, password and address (whoever is at the machine needs them to join).
+  `credentials` shows SSID and password. `status` and `off` never show the password.
+- Failures are shown too ("Hotspot error"). The console output stays the reliable channel: if
+  Moonraker cannot be reached the command still succeeds and prints a warning.
+- Moonraker is reached only on loopback (`moonraker_url` is validated), never through a proxy, and
+  needs no login on this machine (loopback is in Moonraker's default `trusted_clients`).
+- Everything that becomes part of a G-code line goes through a character whitelist, so an error
+  message (which can contain text from nmcli) can never become a second G-code command.
+- Needs the Klipper `[respond]` section. `doctor` and `install.sh` check for it.
 
 ## Behaviours worth knowing
 
@@ -107,6 +124,10 @@ Adding a mode later (`STA`, `FALLBACK`, `DEFERRED`) means adding a state and its
   acceptable to paste into a support chat.
 - Passwords are redacted in backend errors, and `Credentials`/`HotspotSettings` have a `repr` that
   hides them. A test asserts the password never appears in captured logs.
+
+- Showing the password on the screen means it also passes through Klipper's G-code history and
+  Moonraker's console store (the same as `HOTSPOT_CREDENTIALS`). Acceptable for someone with physical
+  or console access; do not paste a console screenshot into a support chat.
 
 ## Failure modes
 
@@ -141,7 +162,7 @@ run is what checks those assumptions against the real thing, so run it on every 
 | Automatic fallback (no Wi-Fi at boot) | `Policy` + new states | New `FallbackPolicy`, reads `[fallback]`; manager, API and macros untouched. |
 | Do not switch while printing | `Policy` | Needs Moonraker print state; the macros already warn using Klipper's own `print_stats`. |
 | Wi-Fi setup page (portal) | Control socket client | New process/page calling a new `scan`/`join` verb; protocol version stays 1 (new verbs are additive). |
-| SSID/password shown on the screen (and a QR code) | `credentials` verb | Klipper action prompts for text, a KlipperScreen panel for a QR; no daemon change. |
+| QR code on KlipperScreen | `credentials` verb | A KlipperScreen panel; no daemon change. (SSID and password on the screen already work through action prompts.) |
 | Password rotation | `credentials.py` | New verb and CLI command; creation already refuses to overwrite. |
 | NetworkManager keyfile instead of argv password | `NetworkBackend` | Second implementation, same contract tests. |
 | Config schema 2 | `config.py` | Add migration when `SUPPORTED_CONFIG_VERSION` goes to 2; today it only refuses newer versions. |
@@ -170,8 +191,11 @@ introduces it. Placeholders for features nobody can specify yet are how rewrites
 - Phones keep (or prompt to keep) a Wi-Fi network without internet.
 - The hardening options in the systemd unit do not stop NetworkManager access.
 - `gcode_shell_command` syntax and `verbose` output in the console.
-- The KlipperScreen menu: syntax was checked against the KlipperScreen docs but never run on a screen;
-  the icon name is an assumption. Pressing Status or Password runs a macro whose output goes to the
-  console. Whether KlipperScreen shows it as a popup is unverified; the documented way to show text
-  on the screen is Klipper action prompts (see the roadmap).
+- The KlipperScreen menu: tested on one real screen (it rejected a comment containing brackets, now fixed
+  and covered by a test). The buttons sit under More, which KlipperScreen defines in its own
+  `main_menu.conf`; check that against the KlipperScreen version in use.
+- The on-screen prompts: the syntax follows the KlipperScreen and Mainsail documentation, but the
+  dialog has not been seen on a real screen yet. Also unverified: that Moonraker accepts the JSON
+  body on `POST /printer/gcode/script`, that a Moonraker with forced logins would refuse this (the
+  command then still works and prints a warning), and how a second prompt replaces the first.
 - The Pi 5 RTC battery, if clock accuracy matters without internet (no NTP in hotspot mode).

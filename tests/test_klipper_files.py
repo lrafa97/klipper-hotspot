@@ -26,8 +26,8 @@ def test_every_macro_runs_one_fixed_command_with_a_real_api_verb():
     assert calls, "macros must call the CLI"
     for call in calls:
         assert "CMD=hotspot_cmd" in call
-        verb = re.search(r'PARAMS="(\w+)"', call)
-        assert verb, f"PARAMS must be a fixed literal, got: {call}"
+        verb = re.fullmatch(r'CMD=hotspot_cmd PARAMS="(\w+) --screen"', call.strip())
+        assert verb, f"PARAMS must be a fixed literal verb plus --screen, got: {call}"
         assert verb.group(1) in VERBS
 
 
@@ -45,11 +45,12 @@ def test_every_menu_button_points_at_an_existing_macro():
 def test_menu_follows_the_documented_structure():
     parser = menu()
     for section in parser.sections():
-        assert section.startswith("menu __main hotspot")
+        # inside the More menu, which KlipperScreen defines itself (main_menu.conf)
+        assert section.startswith("menu __main more hotspot"), section
         # panel cannot be combined with method/params/confirm (KlipperScreen docs)
         assert not parser.has_option(section, "panel")
         parent = section.rsplit(" ", 1)[0]
-        if parent != "menu __main":
+        if parent != "menu __main more":
             assert parent in parser.sections(), f"[{section}] has no parent menu item"
         assert parser.has_option(section, "name")
 
@@ -64,4 +65,4 @@ def test_only_section_headers_contain_square_brackets():
 
 def test_dangerous_button_asks_for_confirmation():
     parser = menu()
-    assert parser.has_option("menu __main hotspot on", "confirm")
+    assert parser.has_option("menu __main more hotspot on", "confirm")
