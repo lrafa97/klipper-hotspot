@@ -188,6 +188,9 @@ introduces it. Placeholders for features nobody can specify yet are how rewrites
 ## Must be verified on a real Pi before trusting it
 
 - Raspberry Pi OS Bookworm with NetworkManager (not `dhcpcd`/`wpa_supplicant`).
+- The Wi-Fi adapter must support access point mode (`nmcli -f WIFI-PROPERTIES device show wlan0` must say `AP: yes`).
+  Seen on a real machine: `AP: no`, and nmcli only said "profile is not compatible with device". The backend now
+  refuses early with `ap_unsupported`, `doctor` reports it and `install.sh` warns.
 - nmcli property names and output formats used by `NmcliBackend`.
 - After `off`, NetworkManager reconnects to the known Wi-Fi by itself, and how long it takes.
 - Wi-Fi regulatory country is set (`raspi-config`); otherwise the AP may not start or may be limited.

@@ -97,3 +97,8 @@ def test_no_profile_accumulation_over_many_cycles(backend):
 def test_interface_detection_is_boolean(backend):
     assert isinstance(backend.wifi_interface_present("definitely-not-an-interface"), bool)
     assert backend.wifi_interface_present("definitely-not-an-interface") is False
+
+
+def test_ap_support_is_a_bool_or_unknown(backend):
+    value = backend.ap_supported(_settings().interface)
+    assert value is None or isinstance(value, bool)

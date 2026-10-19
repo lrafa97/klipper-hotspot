@@ -44,6 +44,10 @@ command -v python3 >/dev/null || die "python3 not found"
 python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)' || die "Python 3.9 or newer is required"
 command -v nmcli >/dev/null || die "nmcli not found: NetworkManager is required (Raspberry Pi OS Bookworm or newer)"
 command -v systemctl >/dev/null || die "systemd is required"
+if [ "$(nmcli -g WIFI-PROPERTIES.AP device show wlan0 2>/dev/null || true)" = "no" ]; then
+    warn "NetworkManager says wlan0 does not support access point mode."
+    warn "The hotspot will not work with this Wi-Fi adapter. Check: nmcli -f WIFI-PROPERTIES device show wlan0"
+fi
 [ -d "$SRC/src/klipper_hotspot" ] || die "run this script from a checkout of the repository"
 
 info "Installing program to $PREFIX"

@@ -105,6 +105,21 @@ def run_checks(config: Config, backend: NetworkBackend) -> List[Check]:
         checks.append(Check("networkmanager", FAIL, str(exc)))
 
     try:
+        ap = backend.ap_supported(config.interface)
+        if ap is False:
+            checks.append(Check(
+                "wifi AP mode", FAIL,
+                f"NetworkManager says {config.interface} does not support access point mode: the "
+                "hotspot cannot work with this Wi-Fi adapter",
+            ))
+        elif ap:
+            checks.append(Check("wifi AP mode", OK, "supported"))
+        else:
+            checks.append(Check("wifi AP mode", WARN, "could not tell whether the adapter supports it"))
+    except BackendError:
+        pass  # already reported above
+
+    try:
         creds = load_credentials(config.credentials_file)
         checks.append(Check("credentials", OK, f"SSID {creds.ssid}"))
     except CredentialsError as exc:

@@ -150,3 +150,29 @@ def test_wifi_interface_detection(nm):
 def test_arguments_are_always_passed_as_a_list_never_a_shell_string(nm, runner, settings):
     nm.start_hotspot(settings)
     assert all(isinstance(c, list) for c in runner.calls)
+
+
+def test_an_adapter_without_ap_mode_is_refused_with_the_real_reason(nm, runner, settings):
+    # Seen on a real machine: AP: no, and nmcli only said "profile is not compatible with device".
+    runner.ap = "no"
+    with pytest.raises(BackendError) as excinfo:
+        nm.start_hotspot(settings)
+    assert excinfo.value.code == "ap_unsupported"
+    assert "does not support access point mode" in str(excinfo.value)
+    assert runner.profiles == []  # nothing was created
+    assert not any(c[:3] == ["nmcli", "connection", "add"] for c in runner.calls)
+
+
+def test_unknown_ap_support_does_not_block_the_attempt(nm, runner, settings):
+    runner.ap = ""  # nmcli printed nothing: we cannot tell, so we try
+    nm.start_hotspot(settings)
+    assert runner.profiles == ["klipper-hotspot"]
+
+
+def test_ap_supported_reads_yes_no_and_unknown(nm, runner):
+    runner.ap = "yes"
+    assert nm.ap_supported("wlan0") is True
+    runner.ap = "no"
+    assert nm.ap_supported("wlan0") is False
+    runner.ap = ""
+    assert nm.ap_supported("wlan0") is None

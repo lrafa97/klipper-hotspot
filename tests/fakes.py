@@ -18,10 +18,16 @@ class FakeBackend(NetworkBackend):
         self.start_calls = 0
         self.stop_calls = 0
         self.last_settings: Optional[HotspotSettings] = None
+        self.ap: Optional[bool] = True
         self._address = "10.42.0.1/24"
+
+    def ap_supported(self, interface: str) -> Optional[bool]:
+        return self.ap
 
     def start_hotspot(self, settings: HotspotSettings) -> None:
         self.start_calls += 1
+        if self.ap is False:
+            raise BackendError("no access point mode", code="ap_unsupported")
         if self.fail_start:
             raise BackendError("simulated start failure")
         self.last_settings = settings
@@ -63,6 +69,7 @@ class FakeNmcliRunner:
         self.fail_up = False
         self.nmcli_missing = False
         self.clients = 0
+        self.ap = "yes"
         self.calls: List[List[str]] = []
 
     def __call__(self, args: Sequence[str], timeout: float) -> Tuple[int, str, str]:
@@ -104,6 +111,8 @@ class FakeNmcliRunner:
             return 0, f"Connection '{name}' successfully deleted.\n", ""
         if a[:5] == ["nmcli", "-t", "-f", "DEVICE,TYPE", "device"]:
             return 0, f"{self.interface}:wifi\neth0:ethernet\nlo:loopback\n", ""
+        if a[:5] == ["nmcli", "-g", "WIFI-PROPERTIES.AP", "device", "show"]:
+            return 0, f"{self.ap}\n", ""
         if a[:4] == ["nmcli", "-g", "IP4.ADDRESS", "device"]:
             return (0, f"{self.address}\n", "") if self.active else (0, "", "")
         return 2, "", f"simulator: unsupported command {a}"

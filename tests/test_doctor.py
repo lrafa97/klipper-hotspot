@@ -113,3 +113,17 @@ def test_respond_module_missing_warns_with_the_fix(healthy, tmp_path):
 def test_a_commented_out_respond_section_does_not_count(healthy, tmp_path):
     (tmp_path / "printer.cfg").write_text("#[respond]\n")
     assert by_name(run_checks(healthy, FakeBackend()))["klipper respond module"].level == WARN
+
+
+def test_an_adapter_without_ap_mode_fails_the_doctor(healthy):
+    backend = FakeBackend()
+    backend.ap = False
+    check = by_name(run_checks(healthy, backend))["wifi AP mode"]
+    assert check.level == FAIL and "cannot work" in check.detail
+
+
+def test_ap_support_ok_and_unknown(healthy):
+    backend = FakeBackend()
+    assert by_name(run_checks(healthy, backend))["wifi AP mode"].level == OK
+    backend.ap = None
+    assert by_name(run_checks(healthy, backend))["wifi AP mode"].level == WARN

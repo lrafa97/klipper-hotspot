@@ -65,6 +65,10 @@ class NetworkBackend(abc.ABC):
     def wifi_interface_present(self, interface: str) -> bool:
         """Whether the given Wi-Fi interface exists."""
 
+    @abc.abstractmethod
+    def ap_supported(self, interface: str) -> Optional[bool]:
+        """Whether the Wi-Fi interface can act as an access point. None if that cannot be told."""
+
 
 def redact(text: str, secret: Optional[str]) -> str:
     if secret:
@@ -135,6 +139,14 @@ class NmcliBackend(NetworkBackend):
     # -- interface -------------------------------------------------------------------------
 
     def start_hotspot(self, settings: HotspotSettings) -> None:
+        # Seen on a real machine: the Wi-Fi adapter reported AP: no, and nmcli only said "profile is
+        # not compatible with device". Say the real reason before touching any profile.
+        if self.ap_supported(settings.interface) is False:
+            raise BackendError(
+                f"{settings.interface} cannot be a hotspot: NetworkManager reports that this Wi-Fi "
+                "adapter does not support access point mode (AP: no). Use a Wi-Fi adapter that does.",
+                code="ap_unsupported",
+            )
         self._delete_profiles()
         add = [
             "nmcli", "connection", "add",
@@ -190,6 +202,16 @@ class NmcliBackend(NetworkBackend):
             if device == interface and kind == "wifi":
                 return True
         return False
+
+    def ap_supported(self, interface: str) -> Optional[bool]:
+        out = self._run(
+            ["nmcli", "-g", "WIFI-PROPERTIES.AP", "device", "show", interface], check=False
+        ).strip().lower()
+        if out == "yes":
+            return True
+        if out == "no":
+            return False
+        return None
 
     def _ip(self, interface: str) -> Optional[str]:
         out = self._run(["nmcli", "-g", "IP4.ADDRESS", "device", "show", interface], check=False)
