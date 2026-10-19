@@ -1,0 +1,34 @@
+# klipper-hotspot configuration. Lines starting with # are comments.
+# Changes take effect after:  sudo systemctl restart klipper-hotspot
+
+[general]
+config_version = 1
+# Start the hotspot automatically at boot. Off by default: the hotspot is a mode you switch on.
+autostart = false
+
+[hotspot]
+interface = wlan0
+# The SSID is <ssid_prefix>-XXXX, where XXXX is generated once per machine at install time.
+ssid_prefix = Klipper
+# 2.4 GHz only in this version (best compatibility with phones and laptops).
+band = bg
+channel = 6
+address = 10.42.0.1/24
+
+[paths]
+socket = /run/klipper-hotspot/control.sock
+# Group allowed to talk to the daemon (the user that runs Klipper). Set by the installer.
+socket_group = @SOCKET_GROUP@
+state_file = /var/lib/klipper-hotspot/state.json
+credentials_file = /etc/klipper-hotspot/credentials
+
+[integration]
+# Used by "klipper-hotspot doctor" to check that Moonraker trusts the hotspot subnet.
+moonraker_conf = @MOONRAKER_CONF@
+
+# Reserved for future versions. Setting enabled = true in this version is an error.
+[fallback]
+enabled = false
+
+[portal]
+enabled = false

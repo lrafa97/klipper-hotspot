@@ -1,0 +1,26 @@
+[Unit]
+Description=Klipper Hotspot daemon
+Documentation=https://github.com/lrafa97/klipper-hotspot
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/klipper-hotspot daemon
+Restart=on-failure
+RestartSec=3
+# /run/klipper-hotspot (control socket) and /var/lib/klipper-hotspot (state) are created by systemd.
+RuntimeDirectory=klipper-hotspot
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
+StateDirectory=klipper-hotspot
+# Hardening. Validate on the Pi: the daemon only needs the system D-Bus (NetworkManager), /etc
+# (config, credentials) and its own run/state directories.
+NoNewPrivileges=yes
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+
+[Install]
+WantedBy=multi-user.target

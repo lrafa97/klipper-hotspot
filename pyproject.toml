@@ -1,0 +1,13 @@
+[project]
+name = "klipper-hotspot"
+version = "0.1.0"
+description = "Switch the Raspberry Pi of a Klipper machine into Wi-Fi hotspot mode"
+requires-python = ">=3.9"
+dependencies = []
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "tests"]
+testpaths = ["tests"]
+markers = [
+    "hardware: needs a real Raspberry Pi with NetworkManager; enable with HOTSPOT_HW_TESTS=1",
+]
