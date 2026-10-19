@@ -141,7 +141,7 @@ run is what checks those assumptions against the real thing, so run it on every 
 | Automatic fallback (no Wi-Fi at boot) | `Policy` + new states | New `FallbackPolicy`, reads `[fallback]`; manager, API and macros untouched. |
 | Do not switch while printing | `Policy` | Needs Moonraker print state; the macros already warn using Klipper's own `print_stats`. |
 | Wi-Fi setup page (portal) | Control socket client | New process/page calling a new `scan`/`join` verb; protocol version stays 1 (new verbs are additive). |
-| QR code on KlipperScreen | `credentials` verb | Needs a KlipperScreen panel; no daemon change. |
+| SSID/password shown on the screen (and a QR code) | `credentials` verb | Klipper action prompts for text, a KlipperScreen panel for a QR; no daemon change. |
 | Password rotation | `credentials.py` | New verb and CLI command; creation already refuses to overwrite. |
 | NetworkManager keyfile instead of argv password | `NetworkBackend` | Second implementation, same contract tests. |
 | Config schema 2 | `config.py` | Add migration when `SUPPORTED_CONFIG_VERSION` goes to 2; today it only refuses newer versions. |
@@ -169,5 +169,9 @@ introduces it. Placeholders for features nobody can specify yet are how rewrites
 - `10.42.0.1` is reachable from iOS, Android and Windows, and Mainsail loads over it.
 - Phones keep (or prompt to keep) a Wi-Fi network without internet.
 - The hardening options in the systemd unit do not stop NetworkManager access.
-- `gcode_shell_command` syntax, `verbose` output in the console, and the KlipperScreen menu keys.
+- `gcode_shell_command` syntax and `verbose` output in the console.
+- The KlipperScreen menu: syntax was checked against the KlipperScreen docs but never run on a screen;
+  the icon name is an assumption. Pressing Status or Password runs a macro whose output goes to the
+  console. Whether KlipperScreen shows it as a popup is unverified; the documented way to show text
+  on the screen is Klipper action prompts (see the roadmap).
 - The Pi 5 RTC battery, if clock accuracy matters without internet (no NTP in hotspot mode).
