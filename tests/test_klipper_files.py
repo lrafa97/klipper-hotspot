@@ -54,6 +54,14 @@ def test_menu_follows_the_documented_structure():
         assert parser.has_option(section, "name")
 
 
+def test_only_section_headers_contain_square_brackets():
+    # KlipperScreen rejected the whole config ("Section headers have extra information after
+    # brackets") because a comment line contained a bracket. Real screen, real failure.
+    for number, line in enumerate((DATA / "klipperscreen-menu.conf").read_text().splitlines(), 1):
+        if "[" in line or "]" in line:
+            assert re.fullmatch(r"\[menu [\w ]+\]", line), f"line {number} has a stray bracket: {line!r}"
+
+
 def test_dangerous_button_asks_for_confirmation():
     parser = menu()
     assert parser.has_option("menu __main hotspot on", "confirm")
