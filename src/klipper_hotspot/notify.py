@@ -23,7 +23,9 @@ MAX_TEXT = 320  # the whole text of one prompt
 MAX_TITLE = 40
 
 # Whitelist, not blacklist. Anything else becomes "?".
-_UNSAFE = re.compile(r"[^A-Za-z0-9 .,:/_()+-]")
+# The apostrophe is allowed on purpose: nmcli quotes names in nearly every error message, and
+# inside the double-quoted MSG it is a plain character. The double quote is what must never pass.
+_UNSAFE = re.compile(r"[^A-Za-z0-9 .,:/_()+'-]")
 
 _PROMPT = 'RESPOND TYPE=command MSG="action:{}"'
 _CLOSE = "Close|RESPOND TYPE=command MSG=action:prompt_end|primary"

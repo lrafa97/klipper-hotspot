@@ -1,3 +1,5 @@
+import shlex
+
 import pytest
 
 from conftest import PASSWORD
@@ -12,14 +14,38 @@ def test_clean_keeps_normal_text():
 
 
 def test_clean_removes_everything_that_could_end_a_message_or_start_a_command():
-    dirty = 'a"b;c\nd|e#f{g}h\'i=j\\k%l'
+    dirty = 'a"b;c\nd|e#f{g}h=i\\j%k'
     cleaned = clean(dirty)
-    assert not any(ch in cleaned for ch in '";\n|#{}\'=\\%')
+    assert not any(ch in cleaned for ch in '";\n|#{}=\\%')
 
 
 def test_clean_limits_length():
     assert len(clean("x" * 1000)) == MAX_LINE
     assert len(clean("x" * 1000, 10)) == 10
+
+
+HOSTILE = [
+    "boom' \"M112\" '",
+    "it's \"fine\" ' FIRMWARE_RESTART",
+    "a'b'c\"d\ne;f|g",
+    "' ; M112 ; '",
+]
+
+
+@pytest.mark.parametrize("text", HOSTILE)
+def test_apostrophes_and_quotes_cannot_break_out_of_the_message(text):
+    # Klipper splits the parameters of RESPOND with shlex. Whatever the text, the line must stay
+    # exactly: RESPOND, TYPE=command, and ONE MSG token.
+    for line in prompt_script("t'itle", [text, "x"]).split("\n"):
+        if "prompt_footer_button" in line:
+            continue
+        tokens = shlex.split(line)
+        assert len(tokens) == 3, (line, tokens)
+        assert tokens[0] == "RESPOND" and tokens[1] == "TYPE=command" and tokens[2].startswith("MSG=action:")
+
+
+def test_nmcli_style_quotes_stay_readable():
+    assert clean("Connection 'klipper-hotspot' is not available") == "Connection 'klipper-hotspot' is not available"
 
 
 def test_a_long_nmcli_error_is_not_cut_where_the_reason_starts():
