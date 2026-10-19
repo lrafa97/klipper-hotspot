@@ -2,7 +2,7 @@ import pytest
 
 from conftest import PASSWORD
 from klipper_hotspot.errors import HotspotError
-from klipper_hotspot.notify import clean, describe, prompt_script, send_script
+from klipper_hotspot.notify import MAX_LINE, MAX_TEXT, clean, describe, prompt_script, send_script
 
 PREFIX = 'RESPOND TYPE=command MSG="action:'
 
@@ -18,8 +18,17 @@ def test_clean_removes_everything_that_could_end_a_message_or_start_a_command():
 
 
 def test_clean_limits_length():
-    assert len(clean("x" * 500)) == 80
-    assert len(clean("x" * 500, 10)) == 10
+    assert len(clean("x" * 1000)) == MAX_LINE
+    assert len(clean("x" * 1000, 10)) == 10
+
+
+def test_a_long_nmcli_error_is_not_cut_where_the_reason_starts():
+    # Real failure: the screen showed "...Connection activation failed: Connec" and hid the reason.
+    error = ("nmcli connection up failed (exit 4): Error: Connection activation failed: Connection "
+             "'klipper-hotspot' is not available on device wlan0 because device is strictly unmanaged")
+    assert len(error) > 80
+    assert clean(error) == error
+    assert "strictly unmanaged" in prompt_script("Hotspot error", [error])
 
 
 def test_prompt_script_has_the_documented_shape():
@@ -40,9 +49,9 @@ def test_all_information_goes_into_one_prompt_text():
 
 
 def test_the_whole_text_is_length_limited():
-    script = prompt_script("t", ["x" * 80] * 10)
+    script = prompt_script("t", ["x" * MAX_LINE] * 10)
     text = [l for l in script.split("\n") if "prompt_text" in l][0]
-    assert len(text) <= len(PREFIX) + len("prompt_text ") + 240 + 1
+    assert len(text) <= len(PREFIX) + len("prompt_text ") + MAX_TEXT + 1
 
 
 def test_text_can_never_become_a_second_gcode_command():
