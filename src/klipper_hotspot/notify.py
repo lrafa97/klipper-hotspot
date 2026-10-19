@@ -16,7 +16,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .errors import HotspotError
 
-MAX_LINE = 80
+MAX_LINE = 80  # one part of the text (an SSID, a password, an error)
+MAX_TEXT = 240  # the whole text of one prompt
 MAX_TITLE = 40
 
 # Whitelist, not blacklist. Anything else becomes "?".
@@ -31,8 +32,12 @@ def clean(value: Any, limit: int = MAX_LINE) -> str:
 
 
 def prompt_script(title: str, lines: List[str]) -> str:
+    # KlipperScreen keeps only the LAST prompt_text (its source overwrites the text each time;
+    # seen on a real screen: Mainsail showed both lines, KlipperScreen only the second). So all
+    # lines go into ONE text. KlipperScreen wraps long text, so a longer line is fine.
+    text = " - ".join(clean(line) for line in lines)[:MAX_TEXT]
     out = [_PROMPT.format(f"prompt_begin {clean(title, MAX_TITLE)}")]
-    out += [_PROMPT.format(f"prompt_text {clean(line)}") for line in lines]
+    out.append(_PROMPT.format(f"prompt_text {text}"))
     out.append(_PROMPT.format(f"prompt_footer_button {_CLOSE}"))
     out.append(_PROMPT.format("prompt_show"))
     return "\n".join(out)
@@ -52,7 +57,7 @@ def describe(
         lines = [f"SSID: {result.get('ssid')}"]
         if credentials:
             lines.append(f"Password: {credentials.get('password')}")
-        lines += [address, "Join this Wi-Fi, then open the address."]
+        lines.append(f"Open http://{ip}" if ip else "Address: unknown")
         return "Hotspot ON", lines
 
     if cmd == "off":

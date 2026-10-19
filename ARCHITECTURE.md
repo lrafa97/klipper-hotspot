@@ -93,6 +93,10 @@ Macro output only reaches the console, which is useless to someone standing at t
 - Everything that becomes part of a G-code line goes through a character whitelist, so an error
   message (which can contain text from nmcli) can never become a second G-code command.
 - Needs the Klipper `[respond]` section. `doctor` and `install.sh` check for it.
+- KlipperScreen keeps only the last `prompt_text` (its source overwrites it; confirmed on a real screen,
+  where Mainsail showed both lines and KlipperScreen only the second), so all facts are joined into one
+  text line. KlipperScreen wraps long text. A new `prompt_show` is ignored while a dialog is still open,
+  so close one dialog before pressing the next button.
 
 ## Behaviours worth knowing
 
@@ -194,8 +198,7 @@ introduces it. Placeholders for features nobody can specify yet are how rewrites
 - The KlipperScreen menu: tested on one real screen (it rejected a comment containing brackets, now fixed
   and covered by a test). The buttons sit under More, which KlipperScreen defines in its own
   `main_menu.conf`; check that against the KlipperScreen version in use.
-- The on-screen prompts: the syntax follows the KlipperScreen and Mainsail documentation, but the
-  dialog has not been seen on a real screen yet. Also unverified: that Moonraker accepts the JSON
-  body on `POST /printer/gcode/script`, that a Moonraker with forced logins would refuse this (the
-  command then still works and prints a warning), and how a second prompt replaces the first.
+- The on-screen prompts: the Status dialog was seen working on KlipperScreen v0.4.7-196 and in Mainsail,
+  so Moonraker accepts the JSON POST. Not yet seen: the ON dialog with the password after the Wi-Fi
+  switch, and a Moonraker with forced logins (the command then still works and prints a warning).
 - The Pi 5 RTC battery, if clock accuracy matters without internet (no NTP in hotspot mode).

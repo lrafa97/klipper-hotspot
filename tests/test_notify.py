@@ -25,10 +25,24 @@ def test_clean_limits_length():
 def test_prompt_script_has_the_documented_shape():
     lines = prompt_script("Hotspot ON", ["SSID: A", "Password: B"]).split("\n")
     assert lines[0] == PREFIX + 'prompt_begin Hotspot ON"'
-    assert lines[1] == PREFIX + 'prompt_text SSID: A"'
-    assert lines[2] == PREFIX + 'prompt_text Password: B"'
-    assert lines[3].startswith(PREFIX + "prompt_footer_button Close|")
+    assert lines[1] == PREFIX + 'prompt_text SSID: A - Password: B"'
+    assert lines[2].startswith(PREFIX + "prompt_footer_button Close|")
     assert lines[-1] == PREFIX + 'prompt_show"'
+
+
+def test_all_information_goes_into_one_prompt_text():
+    # Seen on a real KlipperScreen: it keeps only the LAST prompt_text, Mainsail shows all of them.
+    # With one line per fact the screen showed the SSID and lost the state (and would lose the
+    # password). Everything must be in a single prompt_text.
+    script = prompt_script("Hotspot ON", ["SSID: A", "Password: B", "Open http://10.42.0.1"])
+    assert script.count("prompt_text") == 1
+    assert "SSID: A - Password: B - Open http://10.42.0.1" in script
+
+
+def test_the_whole_text_is_length_limited():
+    script = prompt_script("t", ["x" * 80] * 10)
+    text = [l for l in script.split("\n") if "prompt_text" in l][0]
+    assert len(text) <= len(PREFIX) + len("prompt_text ") + 240 + 1
 
 
 def test_text_can_never_become_a_second_gcode_command():
@@ -45,7 +59,7 @@ def test_describe_on_shows_ssid_password_and_address():
     title, lines = describe("on", result, {"ssid": "Klipper-TEST", "password": PASSWORD})
     assert title == "Hotspot ON"
     text = "\n".join(lines)
-    assert "Klipper-TEST" in text and PASSWORD in text and "http://10.42.0.1" in text
+    assert "Klipper-TEST" in text and PASSWORD in text and "Open http://10.42.0.1" in text
 
 
 def test_describe_on_without_credentials_omits_the_password_line():
