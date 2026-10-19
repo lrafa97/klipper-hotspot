@@ -16,10 +16,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .errors import HotspotError
 
-# A real failure was cut at 80 characters, right where nmcli says WHY it failed, so these are
-# generous. The dialog is 800x480 and wraps text.
-MAX_LINE = 200  # one part of the text (an SSID, a password, an error)
-MAX_TEXT = 320  # the whole text of one prompt
+# Real failures were cut at 80 and then at 200 characters, each time right where nmcli says WHY
+# it failed (its errors are about 250 characters), so these are generous. The dialog is
+# 800x480, wraps text and scrolls vertically.
+MAX_LINE = 400  # one part of the text (an SSID, a password, an error)
+MAX_TEXT = 500  # the whole text of one prompt
 MAX_TITLE = 40
 
 # Whitelist, not blacklist. Anything else becomes "?".

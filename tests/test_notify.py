@@ -52,7 +52,8 @@ def test_a_long_nmcli_error_is_not_cut_where_the_reason_starts():
     # Real failure: the screen showed "...Connection activation failed: Connec" and hid the reason.
     error = ("nmcli connection up failed (exit 4): Error: Connection activation failed: Connection "
              "'klipper-hotspot' is not available on device wlan0 because device is strictly unmanaged")
-    assert len(error) > 80
+    error += " (the device does not support Access Point mode). " + "Extra detail. " * 8
+    assert len(error) > 200
     assert clean(error) == error
     assert "strictly unmanaged" in prompt_script("Hotspot error", [error])
 
