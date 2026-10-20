@@ -201,7 +201,11 @@ introduces it. Placeholders for features nobody can specify yet are how rewrites
 - The KlipperScreen menu: tested on one real screen (it rejected a comment containing brackets, now fixed
   and covered by a test). The buttons sit under More, which KlipperScreen defines in its own
   `main_menu.conf`; check that against the KlipperScreen version in use.
-- The on-screen prompts: the Status dialog was seen working on KlipperScreen v0.4.7-196 and in Mainsail,
-  so Moonraker accepts the JSON POST. Not yet seen: the ON dialog with the password after the Wi-Fi
-  switch, and a Moonraker with forced logins (the command then still works and prints a warning).
+- The on-screen prompts: Status, Off and the ON dialog with the password work on a real KlipperScreen
+  (v0.4.7-196) and in Mainsail. Not yet seen: a Moonraker with forced logins (the command then still works
+  and prints a warning).
+- Confirmed on a real Pi 3 with a USB Wi-Fi adapter that supports AP: hotspot on, a Windows laptop joins it
+  (Windows may ask for a WPS PIN: choose to connect with the security key instead) and Mainsail opens at
+  http://10.42.0.1.
+- Run `doctor` with sudo: the credentials file is root only.
 - The Pi 5 RTC battery, if clock accuracy matters without internet (no NTP in hotspot mode).
