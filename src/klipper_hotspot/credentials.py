@@ -76,12 +76,22 @@ def load_credentials(path: str) -> Credentials:
         raise CredentialsError(
             f"credentials file {path} must not be accessible by group or others (chmod 600)"
         )
+    # Reading and parsing fail for different reasons. Seen on a real machine: the file was fine,
+    # but `doctor` run without sudo could not read it (0600 root) and said "malformed".
+    try:
+        text = target.read_text(encoding="utf-8")
+    except PermissionError:
+        raise CredentialsError(
+            f"cannot read credentials {path}: permission denied (the file is root only; run with sudo)"
+        )
+    except (OSError, UnicodeDecodeError) as exc:
+        raise CredentialsError(f"cannot read credentials {path}: {getattr(exc, 'strerror', None) or exc}")
     parser = configparser.ConfigParser(interpolation=None)
     try:
-        parser.read_string(target.read_text(encoding="utf-8"))
+        parser.read_string(text)
         ssid = parser.get("hotspot", "ssid").strip()
         password = parser.get("hotspot", "password").strip()
-    except (configparser.Error, OSError):
+    except configparser.Error:
         raise CredentialsError(f"credentials file {path} is malformed")
     if not 1 <= len(ssid.encode("utf-8")) <= 32:
         raise CredentialsError("SSID must be 1-32 bytes")

@@ -76,3 +76,26 @@ def test_load_rejects_malformed_file(tmp_path):
     os.chmod(path, 0o600)
     with pytest.raises(CredentialsError, match="malformed"):
         load_credentials(str(path))
+
+
+def test_unreadable_file_is_a_permission_error_not_malformed(tmp_path, monkeypatch):
+    # Real case: `doctor` run without sudo on a 0600 root file reported "malformed".
+    from pathlib import Path
+
+    from klipper_hotspot.credentials import create_credentials, load_credentials
+    from klipper_hotspot.errors import CredentialsError
+
+    path = str(tmp_path / "credentials")
+    create_credentials(path, "Klipper")
+
+    def denied(self, *args, **kwargs):
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(Path, "read_text", denied)
+    try:
+        load_credentials(path)
+    except CredentialsError as exc:
+        assert "permission denied" in str(exc) and "sudo" in str(exc)
+        assert "malformed" not in str(exc)
+    else:
+        raise AssertionError("expected CredentialsError")
