@@ -29,6 +29,8 @@ ligar ao Mainsail (browser) numa divisão sem internet. O KlipperScreen corre no
 - Máquinas onde foi visto:
   - Pi 3 sem Wi-Fi integrado, com pen USB Ralink MT7601U: `AP: no`, só `managed` e `monitor`. **Não serve.**
   - Máquina `jntPRO`: `wifi AP mode: supported`, hotspot funcionou. O modelo exato do Pi e da pen não ficou registado.
+  - Raspberry Pi 3B+ (Wi-Fi integrado): o utilizador testou e disse que "carregou tudo bem". Só isso foi dito: não
+    ficou registada a saída do `doctor`, nem se um dispositivo se ligou, nem o `HOTSPOT_OFF`.
 - Dependências no Klipper (o `install.sh` avisa, mas nunca as instala nem edita o `printer.cfg`):
   - extra `gcode_shell_command`, instalado pelo KIAUH (responder **não** ao exemplo de macro);
   - secção `[respond]` no `printer.cfg` (ou num ficheiro incluído, como o `mainsail.cfg`).
@@ -170,12 +172,13 @@ Versão `0.1.0`. Último estado registado: 182 testes a passar, 8 saltados (hard
 **Feito e confirmado numa máquina real**
 - Instalação, macros no Mainsail, botões em More → Hotspot no KlipperScreen (v0.4.7-196).
 - Diálogos no ecrã: Status, erros e o diálogo do `HOTSPOT_ON` com SSID, palavra-passe e endereço.
-- Hotspot a ligar, portátil Windows a ligar-se, Mainsail a abrir em `http://10.42.0.1`.
+- Hotspot a ligar, portátil Windows a ligar-se, Mainsail a abrir em `http://10.42.0.1` (máquina `jntPRO`).
+- Pi 3B+ com Wi-Fi integrado: o utilizador testou os botões e disse que correu bem. **Não confirmado** nessa máquina: ligação de um dispositivo, `HOTSPOT_OFF` e saída do `doctor`.
 - Deteção de adaptador sem AP (visto no Pi 3 com MT7601U): erro claro, `doctor` e aviso no instalador.
 - `doctor` com `sudo`: mensagem correta quando não consegue ler as credenciais.
 
 **Por fazer / não confirmado**
-- `HOTSPOT_OFF`: confirmar que a máquina volta sozinha à rede normal e quanto demora.
+- `HOTSPOT_OFF`: confirmar que a máquina volta sozinha à rede normal e quanto demora (nem na `jntPRO` nem no Pi 3B+ ficou registado).
 - Testes de hardware (`HOTSPOT_HW_TESTS=1`) nunca corridos num Pi.
 - Moonraker com logins forçados (o comando funciona e avisa, mas não foi visto).
 - iOS e Android a ligar ao hotspot; telemóveis a manterem a rede sem internet.
