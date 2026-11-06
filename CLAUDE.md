@@ -1,5 +1,13 @@
 # CLAUDE.md
 
+## Repositório público: regra obrigatória
+
+Este repositório é público, incluindo este ficheiro, os commits e o histórico. Vale para qualquer sessão do Claude, na web ou no PC.
+
+- Nunca publicar nomes de pessoas, nomes reais de máquinas, IPs reais, endereços MAC, números de série, nomes de redes Wi-Fi, caminhos de pastas pessoais, emails, tokens, palavras-passe, nomes de clientes, projetos de trabalho ou notas sobre o utilizador.
+- Usar sempre exemplos genéricos: `printer`, `192.168.1.50`, `<MAC>`, "máquina de teste".
+- Antes de cada commit, rever o conteúdo a publicar. Se tiver dados destes, substituí-los antes do push.
+
 Contexto para quem trabalha neste repositório (Claude Code ou pessoa). Ler antes de mexer em código,
 macros ou no menu do KlipperScreen. Este ficheiro está em português europeu; o programa, as mensagens e
 os outros documentos (`README.md`, `ARCHITECTURE.md`) estão em inglês.
