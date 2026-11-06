@@ -191,7 +191,7 @@ Versão `0.1.0`. Último estado registado: 182 testes a passar, 8 saltados (hard
 - Moonraker com logins forçados (o comando funciona e avisa, mas não foi visto).
 - iOS e Android a ligar ao hotspot; telemóveis a manterem a rede sem internet.
 - Regulatory domain (país Wi-Fi) definido nas máquinas.
-- Licença do repositório: nenhuma escolhida. Decidir se o repositório fica privado ou público.
+- Licença do repositório: GPL-3.0. O repositório é público.
 - Funcionalidades previstas e **não construídas**: QR no ecrã, fallback automático, portal de Wi-Fi, rotação de palavra-passe, perfil por keyfile em vez de palavra-passe na linha de comandos.
 
 **Problemas conhecidos**
